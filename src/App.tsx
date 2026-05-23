@@ -75,32 +75,34 @@ function App() {
     <>
       <div>
         <div className="container">
-          {/* Chat Messages */}
-          {msgs.map((item) => {
-            return (
-              <div
-                key={item.id}
-                className={item.role === "user" ? "user-msg" : "ai-msg"}
-              >
-                <div>{item.content}</div>
+          <div className="messages">
+            {/* Chat Messages */}
+            {msgs.map((item) => {
+              return (
+                <div
+                  key={item.id}
+                  className={item.role === "user" ? "user-msg" : "ai-msg"}
+                >
+                  <div>{item.content}</div>
+                </div>
+              );
+            })}
+
+            {/* Loader */}
+            {isLoading && (
+              <div className="loader-container">
+                <div className="loader"></div>
+                <p>AI is thinking...</p>
               </div>
-            );
-          })}
+            )}
 
-          {/* Loader */}
-          {isLoading && (
-            <div className="loader-container">
-              <div className="loader"></div>
-              <p>AI is thinking...</p>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {errorMsg && (
-            <div className="error-message">
-              <p>{errorMsg}</p>
-            </div>
-          )}
+            {/* Error Message */}
+            {errorMsg && (
+              <div className="error-message">
+                <p>{errorMsg}</p>
+              </div>
+            )}
+          </div>
 
           {/* Chat Input */}
           <div className="chat-input">

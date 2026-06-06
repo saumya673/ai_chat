@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import "./App.css";
 import Dropdown from "./components/Dropdown";
 import { type Pdf } from "./components/Dropdown";
@@ -9,10 +9,17 @@ type ChatBubble = {
   content: string;
 };
 
+const MessageBubble = memo(function MessageBubble({ role, content }: ChatBubble) {
+  return (
+    <div className={role === "user" ? "user-msg" : "ai-msg"}>
+      <div>{content}</div>
+    </div>
+  );
+});
+
 function App() {
   const [userMsg, setUserMsg] = useState("");
   const [msgs, setMsgs] = useState<ChatBubble[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [pdfId, setPdfId] = useState<number | "">("");
   const [pdfList, setPdfList] = useState<Pdf[]>([]);
@@ -49,7 +56,6 @@ function App() {
         content: userMsg,
       },
     ]);
-    setIsLoading(true);
     setErrorMsg("");
 
     try {
@@ -66,27 +72,44 @@ function App() {
           content: msg,
         }),
       });
-      if (!res.ok) {
-        throw new Error(`Error: ${res.status} ${res.statusText}`);
-      }
+      const assistantId = crypto.randomUUID();
 
-      const data = await res.json();
-      console.log("data", data);
       setMsgs((prev) => [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: assistantId,
           role: "assistant",
-          content: data.message,
+          content: "",
         },
       ]);
+
+      if (!res.body) {
+        throw new Error("Response body is empty");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+
+        setMsgs((prev) =>
+          prev.map((item) =>
+            item.id === assistantId
+              ? { ...item, content: item.content + chunk }
+              : item,
+          ),
+        );
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to get response";
       setErrorMsg(message);
       console.log(error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -96,24 +119,14 @@ function App() {
         <div className="container">
           <div className="messages">
             {/* Chat Messages */}
-            {msgs.map((item) => {
-              return (
-                <div
-                  key={item.id}
-                  className={item.role === "user" ? "user-msg" : "ai-msg"}
-                >
-                  <div>{item.content}</div>
-                </div>
-              );
-            })}
-
-            {/* Loader */}
-            {isLoading && (
-              <div className="loader-container">
-                <div className="loader"></div>
-                <p>AI is thinking...</p>
-              </div>
-            )}
+            {msgs.map((item) => (
+              <MessageBubble
+                key={item.id}
+                id={item.id}
+                role={item.role}
+                content={item.content}
+              />
+            ))}
 
             {/* Error Message */}
             {errorMsg && (

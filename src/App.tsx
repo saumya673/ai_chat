@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState, useLayoutEffect } from "react";
 import "./App.css";
 import Dropdown from "./components/Dropdown";
 import { type Pdf } from "./components/Dropdown";
@@ -9,7 +9,10 @@ type ChatBubble = {
   content: string;
 };
 
-const MessageBubble = memo(function MessageBubble({ role, content }: ChatBubble) {
+const MessageBubble = memo(function MessageBubble({
+  role,
+  content,
+}: ChatBubble) {
   return (
     <div className={role === "user" ? "user-msg" : "ai-msg"}>
       <div>{content}</div>
@@ -23,6 +26,15 @@ function App() {
   const [errorMsg, setErrorMsg] = useState("");
   const [pdfId, setPdfId] = useState<number | "">("");
   const [pdfList, setPdfList] = useState<Pdf[]>([]);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current;
+
+    if (!container) return;
+
+    container.scrollTop = container.scrollHeight;
+  }, [msgs]);
 
   useEffect(() => {
     const handleDropdown = async () => {
@@ -73,7 +85,6 @@ function App() {
         }),
       });
       const assistantId = crypto.randomUUID();
-
       setMsgs((prev) => [
         ...prev,
         {
@@ -117,7 +128,7 @@ function App() {
     <>
       <div>
         <div className="container">
-          <div className="messages">
+          <div className="messages" ref={messagesContainerRef}>
             {/* Chat Messages */}
             {msgs.map((item) => (
               <MessageBubble

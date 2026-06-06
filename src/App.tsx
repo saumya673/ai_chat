@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
+import Dropdown from "./components/Dropdown";
+import { type Pdf } from "./components/Dropdown";
 
 type ChatBubble = {
   id: string;
@@ -12,11 +14,28 @@ function App() {
   const [msgs, setMsgs] = useState<ChatBubble[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [pdfId, setPdfId] = useState<number | "">("");
+  const [pdfList, setPdfList] = useState<Pdf[]>([]);
+
+  useEffect(() => {
+    const handleDropdown = async () => {
+      const response = await fetch("http://127.0.0.1:8000/pdfs");
+      const pdfs = await response.json();
+      setPdfList(pdfs.pdf_data);
+    };
+
+    handleDropdown();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserMsg(e.target.value);
     setErrorMsg("");
   };
+
+  const url =
+    pdfId !== ""
+      ? `http://127.0.0.1:8000/chat?pdf_id=${pdfId}`
+      : "http://127.0.0.1:8000/chat";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,7 +55,7 @@ function App() {
     try {
       const msg = userMsg;
       setUserMsg("");
-      const res = await fetch(`http://127.0.0.1:8000/chat`, {
+      const res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -113,7 +132,7 @@ function App() {
                 value={userMsg}
                 onChange={handleChange}
               />
-
+              <Dropdown pdfList={pdfList} pdfId={pdfId} setPdfId={setPdfId} />
               <button className="input-button" type="submit">
                 Send
               </button>
